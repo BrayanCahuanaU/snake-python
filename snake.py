@@ -1,132 +1,151 @@
 import tkinter
 import random  
 
-ROWS = 25
-COLS = 25
-TILE_SIZE = 25
+# Constantes del juego
+FILAS = 25  # Número de filas en el tablero
+COLUMNAS = 25  # Número de columnas en el tablero
+TAMAÑO_CASILLA = 25  # Tamaño en píxeles de cada casilla
 
-WINDOW_WIDTH = TILE_SIZE * COLS #25*25 = 625
-WINDOW_HEIGHT = TILE_SIZE * ROWS #25*25 = 625
+ANCHO_VENTANA = TAMAÑO_CASILLA * COLUMNAS  # Ancho total de la ventana
+ALTO_VENTANA = TAMAÑO_CASILLA * FILAS  # Alto total de la ventana
 
-class Tile:
+class Casilla:
     def __init__(self, x, y):
-        self.x = x
-        self.y = y
+        self.x = x  # Posición horizontal
+        self.y = y  # Posición vertical
 
-#game window
-window = tkinter.Tk()
-window.title("Snake")
-window.resizable(False, False)
+# Configuración de la ventana principal
+ventana = tkinter.Tk()
+ventana.title("Snake")  # Título de la ventana
+ventana.resizable(False, False)  # Ventana no redimensionable
 
-canvas = tkinter.Canvas(window, bg = "black", width = WINDOW_WIDTH, height = WINDOW_HEIGHT, borderwidth = 0, highlightthickness = 0)
-canvas.pack()
-window.update()
+# Creación del lienzo (canvas) donde se dibuja el juego
+lienzo = tkinter.Canvas(ventana, bg="black", width=ANCHO_VENTANA, height=ALTO_VENTANA, 
+                       borderwidth=0, highlightthickness=0)
+lienzo.pack()
+ventana.update()  # Actualiza la ventana para obtener sus dimensiones reales
 
-#center the window
-window_width = window.winfo_width()
-window_height = window.winfo_height()
-screen_width = window.winfo_screenwidth()
-screen_height = window.winfo_screenheight()
+# Centrar la ventana en la pantalla
+ancho_ventana = ventana.winfo_width()
+alto_ventana = ventana.winfo_height()
+ancho_pantalla = ventana.winfo_screenwidth()
+alto_pantalla = ventana.winfo_screenheight()
 
-window_x = int((screen_width/2) - (window_width/2))
-window_y = int((screen_height/2) - (window_height/2))
+pos_x = int((ancho_pantalla/2) - (ancho_ventana/2))
+pos_y = int((alto_pantalla/2) - (alto_ventana/2))
 
-#format "(w)x(h)+(x)+(y)"
-window.geometry(f"{window_width}x{window_height}+{window_x}+{window_y}")
+# Establecer geometría de la ventana: "ancho x alto + posX + posY"
+ventana.geometry(f"{ancho_ventana}x{alto_ventana}+{pos_x}+{pos_y}")
 
-#initialize game
-snake = Tile(TILE_SIZE * 5, TILE_SIZE * 5) #single tile, snake's head
-food = Tile(TILE_SIZE * 10, TILE_SIZE * 10)
-velocityX = 0
-velocityY = 0
-snake_body = [] #multiple snake tiles
-game_over = False
-score = 0
+# Inicialización de variables del juego
+serpiente = Casilla(TAMAÑO_CASILLA * 5, TAMAÑO_CASILLA * 5)  # Cabeza de la serpiente
+comida = Casilla(TAMAÑO_CASILLA * 10, TAMAÑO_CASILLA * 10)  # Posición de la comida
+velocidadX = 0  # Velocidad horizontal inicial
+velocidadY = 0  # Velocidad vertical inicial
+cuerpo_serpiente = []  # Lista para almacenar los segmentos del cuerpo
+juego_terminado = False  # Estado del juego
+puntuacion = 0  # Puntuación del jugador
 
-#game loop
-def change_direction(e): #e = event
-    # print(e)
-    # print(e.keysym)
+# Función para cambiar la dirección de la serpiente
+def cambiar_direccion(evento):
+    global velocidadX, velocidadY, juego_terminado
+    
+    if juego_terminado:
+        return  # Si el juego terminó, no se procesan movimientos
+    
+    # Cambiar dirección según la tecla presionada (evitando movimiento opuesto)
+    if (evento.keysym == "Up" and velocidadY != 1):  # Arriba
+        velocidadX = 0
+        velocidadY = -1
+    elif (evento.keysym == "Down" and velocidadY != -1):  # Abajo
+        velocidadX = 0
+        velocidadY = 1
+    elif (evento.keysym == "Left" and velocidadX != 1):  # Izquierda
+        velocidadX = -1
+        velocidadY = 0
+    elif (evento.keysym == "Right" and velocidadX != -1):  # Derecha
+        velocidadX = 1
+        velocidadY = 0
 
-    global velocityX, velocityY, game_over
-    if (game_over):
-        return #edit this code to reset game variables to play again
-
-    if (e.keysym == "Up" and velocityY != 1):
-        velocityX = 0
-        velocityY = -1
-        
-    elif (e.keysym == "Down" and velocityY != -1):
-        velocityX = 0
-        velocityY = 1
-
-    elif (e.keysym == "Left" and velocityX != 1):
-        velocityX = -1
-        velocityY = 0
-
-    elif (e.keysym == "Right" and velocityX != -1):
-        velocityX = 1
-        velocityY = 0
-
-
-def move():
-    global snake, food, snake_body, game_over, score
-    if (game_over):
+# Función para mover la serpiente
+def mover():
+    global serpiente, comida, cuerpo_serpiente, juego_terminado, puntuacion
+    
+    if juego_terminado:
+        return  # Si el juego terminó, no se mueve
+    
+    # Detectar colisión con los bordes
+    if (serpiente.x < 0 or serpiente.x >= ANCHO_VENTANA or 
+        serpiente.y < 0 or serpiente.y >= ALTO_VENTANA):
+        juego_terminado = True
         return
     
-    if (snake.x < 0 or snake.x >= WINDOW_WIDTH or snake.y < 0 or snake.y >= WINDOW_HEIGHT):
-        game_over = True
-        return
-    
-    for tile in snake_body:
-        if (snake.x == tile.x and snake.y == tile.y):
-            game_over = True
+    # Detectar colisión con el propio cuerpo
+    for segmento in cuerpo_serpiente:
+        if (serpiente.x == segmento.x and serpiente.y == segmento.y):
+            juego_terminado = True
             return
     
-    #collision
-    if (snake.x == food.x and snake.y == food.y): 
-        snake_body.append(Tile(food.x, food.y))
-        food.x = random.randint(0, COLS-1) * TILE_SIZE
-        food.y = random.randint(0, ROWS-1) * TILE_SIZE
-        score += 1
-
-    #update snake body
-    for i in range(len(snake_body)-1, -1, -1):
-        tile = snake_body[i]
-        if (i == 0):
-            tile.x = snake.x
-            tile.y = snake.y
-        else:
-            prev_tile = snake_body[i-1]
-            tile.x = prev_tile.x
-            tile.y = prev_tile.y
+    # Detectar colisión con la comida
+    if (serpiente.x == comida.x and serpiente.y == comida.y):
+        cuerpo_serpiente.append(Casilla(comida.x, comida.y))  # Añadir nuevo segmento
+        # Mover la comida a posición aleatoria
+        comida.x = random.randint(0, COLUMNAS-1) * TAMAÑO_CASILLA
+        comida.y = random.randint(0, FILAS-1) * TAMAÑO_CASILLA
+        puntuacion += 1  # Incrementar puntuación
     
-    snake.x += velocityX * TILE_SIZE
-    snake.y += velocityY * TILE_SIZE
+    # Mover el cuerpo de la serpiente
+    for i in range(len(cuerpo_serpiente)-1, -1, -1):
+        segmento = cuerpo_serpiente[i]
+        if i == 0:  # El primer segmento sigue a la cabeza
+            segmento.x = serpiente.x
+            segmento.y = serpiente.y
+        else:  # Los demás segmentos siguen al anterior
+            segmento_previo = cuerpo_serpiente[i-1]
+            segmento.x = segmento_previo.x
+            segmento.y = segmento_previo.y
+    
+    # Mover la cabeza según la velocidad
+    serpiente.x += velocidadX * TAMAÑO_CASILLA
+    serpiente.y += velocidadY * TAMAÑO_CASILLA
 
-
-def draw():
-    global snake, food, snake_body, game_over, score
-    move()
-
-    canvas.delete("all")
-
-    #draw food
-    canvas.create_rectangle(food.x, food.y, food.x + TILE_SIZE, food.y + TILE_SIZE, fill = 'red')
-
-    #draw snake
-    canvas.create_rectangle(snake.x, snake.y, snake.x + TILE_SIZE, snake.y + TILE_SIZE, fill = 'lime green')
-
-    for tile in snake_body:
-        canvas.create_rectangle(tile.x, tile.y, tile.x + TILE_SIZE, tile.y + TILE_SIZE, fill = 'lime green')
-
-    if (game_over):
-        canvas.create_text(WINDOW_WIDTH/2, WINDOW_HEIGHT/2, font = "Arial 20", text = f"Game Over: {score}", fill = "white")
+# Función principal de dibujo y actualización del juego
+def dibujar():
+    global serpiente, comida, cuerpo_serpiente, juego_terminado, puntuacion
+    
+    mover()  # Actualizar posiciones
+    
+    lienzo.delete("all")  # Limpiar el lienzo
+    
+    # Dibujar la comida (roja)
+    lienzo.create_rectangle(comida.x, comida.y, 
+                          comida.x + TAMAÑO_CASILLA, comida.y + TAMAÑO_CASILLA, 
+                          fill='red')
+    
+    # Dibujar la cabeza de la serpiente (verde lima)
+    lienzo.create_rectangle(serpiente.x, serpiente.y, 
+                          serpiente.x + TAMAÑO_CASILLA, serpiente.y + TAMAÑO_CASILLA, 
+                          fill='lime green')
+    
+    # Dibujar el cuerpo de la serpiente
+    for segmento in cuerpo_serpiente:
+        lienzo.create_rectangle(segmento.x, segmento.y, 
+                              segmento.x + TAMAÑO_CASILLA, segmento.y + TAMAÑO_CASILLA, 
+                              fill='lime green')
+    
+    # Mostrar mensaje de juego terminado o puntuación
+    if juego_terminado:
+        lienzo.create_text(ANCHO_VENTANA/2, ALTO_VENTANA/2, 
+                          font="Arial 20", text=f"Game Over: {puntuacion}", 
+                          fill="white")
     else:
-        canvas.create_text(30, 20, font = "Arial 10", text = f"Score: {score}", fill = "white")
+        lienzo.create_text(30, 20, font="Arial 10", 
+                         text=f"Puntuación: {puntuacion}", fill="white")
     
-    window.after(100, draw) #call draw again every 100ms (1/10 of a second) = 10 frames per second
+    # Programar próximo frame (10 FPS)
+    ventana.after(100, dibujar)
 
-draw()
-window.bind("<KeyRelease>", change_direction) #when you press on any key and then let go
-window.mainloop() #used for listening to window events like key presses
+# Iniciar el juego
+dibujar()
+ventana.bind("<KeyRelease>", cambiar_direccion)  # Configurar controles
+ventana.mainloop()  # Bucle principal de la aplicación
