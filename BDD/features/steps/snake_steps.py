@@ -1,9 +1,9 @@
-from behave import *
-from snake_game import JuegoSnake, Casilla
-import random
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
 
-# Contexto global para compartir estado entre pasos
-context.juego = None
+from behave import *
+from snake import JuegoSnake, Casilla
 
 @given('el juego está recién iniciado')
 def step_impl(context):
@@ -63,7 +63,6 @@ def step_impl(context):
     # Verificar que la comida ya no está en la posición original
     assert not (context.juego.comida.x == context.juego.serpiente.x and 
                 context.juego.comida.y == context.juego.serpiente.y)
-    
     # Verificar que está dentro de los límites
     assert 0 <= context.juego.comida.x < context.juego.ANCHO_VENTANA
     assert 0 <= context.juego.comida.y < context.juego.ALTO_VENTANA
@@ -79,6 +78,7 @@ def step_impl(context):
     context.juego.velocidadY = 0
     # Posicionar en el borde derecho
     context.juego.serpiente.x = context.juego.ANCHO_VENTANA - context.juego.TAMAÑO_CASILLA
+    context.juego.serpiente.y = context.juego.TAMAÑO_CASILLA * 5  # aseguramos que esté dentro
 
 @given('se mueve hacia la derecha')
 def step_impl(context):
@@ -98,18 +98,34 @@ def step_impl(context):
         Casilla(context.juego.serpiente.x, context.juego.serpiente.y),
         Casilla(context.juego.serpiente.x, context.juego.serpiente.y)
     ]
-    
     # Movemos la cabeza a una posición diferente
     context.juego.serpiente.x = context.juego.TAMAÑO_CASILLA * 10
     context.juego.serpiente.y = context.juego.TAMAÑO_CASILLA * 10
 
 @given('la cabeza se dirige hacia el segundo segmento')
 def step_impl(context):
-    # Posicionamos el segundo segmento justo arriba de la cabeza
-    segmento = context.juego.cuerpo_serpiente[1]
-    segmento.x = context.juego.serpiente.x
-    segmento.y = context.juego.serpiente.y - context.juego.TAMAÑO_CASILLA
-    
-    # Configuramos dirección hacia arriba (hacia el segmento)
+    # Segmento se coloca justo encima de la cabeza
+    context.juego.cuerpo_serpiente[1].x = context.juego.serpiente.x
+    context.juego.cuerpo_serpiente[1].y = context.juego.serpiente.y - context.juego.TAMAÑO_CASILLA
+
     context.juego.velocidadX = 0
     context.juego.velocidadY = -1
+
+    # Mover la cabeza para que choque con el segmento
+    context.juego.serpiente.y -= context.juego.TAMAÑO_CASILLA
+
+@given('el juego ha terminado')
+def step_impl(context):
+    context.juego = JuegoSnake()
+    context.juego.juego_terminado = True
+
+@when('se presiona cualquier tecla')
+def step_impl(context):
+    # Simular intento de cambio de dirección
+    context.juego.cambiar_direccion("Right")
+
+@then('no ocurre ninguna acción')
+def step_impl(context):
+    # Como el juego terminó, las velocidades deben seguir en 0
+    assert context.juego.velocidadX == 0
+    assert context.juego.velocidadY == 0
