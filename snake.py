@@ -57,19 +57,25 @@ class JuegoSnake:
         if self.juego_terminado:
             return
 
-        # Detectar colisión con los bordes
-        if (self.serpiente.x < 0 or self.serpiente.x >= self.ANCHO_VENTANA or 
-            self.serpiente.y < 0 or self.serpiente.y >= self.ALTO_VENTANA):
+        # Mover la cabeza
+        self.serpiente.x += self.velocidadX * self.TAMAÑO_CASILLA
+        self.serpiente.y += self.velocidadY * self.TAMAÑO_CASILLA
+
+        # Verificar colisión con bordes
+        if (self.serpiente.x < 0 or 
+            self.serpiente.x >= self.ANCHO_VENTANA or 
+            self.serpiente.y < 0 or 
+            self.serpiente.y >= self.ALTO_VENTANA):
             self.juego_terminado = True
             return
 
-        # Detectar colisión con el propio cuerpo
+        # Verificar colisión con el propio cuerpo
         for segmento in self.cuerpo_serpiente:
             if (self.serpiente.x == segmento.x and self.serpiente.y == segmento.y):
                 self.juego_terminado = True
                 return
 
-        # Detectar colisión con la comida
+        # Verificar colisión con la comida
         if (self.serpiente.x == self.comida.x and self.serpiente.y == self.comida.y):
             self.cuerpo_serpiente.append(Casilla(self.comida.x, self.comida.y))
             self.generar_comida()
@@ -77,18 +83,14 @@ class JuegoSnake:
 
         # Mover el cuerpo
         for i in range(len(self.cuerpo_serpiente)-1, -1, -1):
-            segmento = self.cuerpo_serpiente[i]
             if i == 0:
-                segmento.x = self.serpiente.x
-                segmento.y = self.serpiente.y
+                self.cuerpo_serpiente[i].x = self.serpiente.x
+                self.cuerpo_serpiente[i].y = self.serpiente.y
             else:
-                segmento_previo = self.cuerpo_serpiente[i-1]
-                segmento.x = segmento_previo.x
-                segmento.y = segmento_previo.y
+                self.cuerpo_serpiente[i].x = self.cuerpo_serpiente[i-1].x
+                self.cuerpo_serpiente[i].y = self.cuerpo_serpiente[i-1].y
 
-        # Mover la cabeza
-        self.serpiente.x += self.velocidadX * self.TAMAÑO_CASILLA
-        self.serpiente.y += self.velocidadY * self.TAMAÑO_CASILLA
+
     
     def reiniciar(self):
         self.serpiente = Casilla(self.TAMAÑO_CASILLA * 5, self.TAMAÑO_CASILLA * 5)

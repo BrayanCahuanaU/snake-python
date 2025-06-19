@@ -74,11 +74,10 @@ def step_impl(context):
 @given('la serpiente está en el borde derecho')
 def step_impl(context):
     context.juego = JuegoSnake()
+    context.juego.serpiente.y = 100  # cualquier valor válido
     context.juego.velocidadX = 1
     context.juego.velocidadY = 0
-    # Posicionar en el borde derecho
     context.juego.serpiente.x = context.juego.ANCHO_VENTANA - context.juego.TAMAÑO_CASILLA
-    context.juego.serpiente.y = context.juego.TAMAÑO_CASILLA * 5  # aseguramos que esté dentro
 
 @given('se mueve hacia la derecha')
 def step_impl(context):
@@ -104,15 +103,18 @@ def step_impl(context):
 
 @given('la cabeza se dirige hacia el segundo segmento')
 def step_impl(context):
-    # Segmento se coloca justo encima de la cabeza
-    context.juego.cuerpo_serpiente[1].x = context.juego.serpiente.x
-    context.juego.cuerpo_serpiente[1].y = context.juego.serpiente.y - context.juego.TAMAÑO_CASILLA
+    # Colocar el segundo segmento justo delante de la cabeza
+    x = context.juego.serpiente.x
+    y = context.juego.serpiente.y - context.juego.TAMAÑO_CASILLA
+
+    context.juego.cuerpo_serpiente = [
+        Casilla(x, y + context.juego.TAMAÑO_CASILLA),  # debajo de la cabeza (posición previa)
+        Casilla(x, y),  # justo encima de la cabeza
+        Casilla(x, y - context.juego.TAMAÑO_CASILLA)   # aún más arriba
+    ]
 
     context.juego.velocidadX = 0
-    context.juego.velocidadY = -1
-
-    # Mover la cabeza para que choque con el segmento
-    context.juego.serpiente.y -= context.juego.TAMAÑO_CASILLA
+    context.juego.velocidadY = -1  # Mover hacia arriba
 
 @given('el juego ha terminado')
 def step_impl(context):
